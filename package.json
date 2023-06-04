@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "node index.js",
-    "forever": "forever start -v index.js"
+    "forever": "forever start -v index.js",
+    "production": "export NODE_ENV=production&&forever start -v index.js"
   },
   "repository": {
     "type": "git",
