@@ -6,7 +6,7 @@
   "scripts": {
     "test": "node index.js",
     "forever": "forever start -v index.js",
-    "production": "export NODE_ENV=production&&forever start -v index.js -f"
+    "production": "export NODE_ENV=production&&forever start -o log.txt -e log.txt index.js && tail -f log.txt"
   },
   "repository": {
     "type": "git",
