@@ -24,6 +24,7 @@ module.exports = (bot) => {
     let queues = new Map();
     let playerStates = new Map();
     let runningCommands = new Map();
+    let disconnectTimers = new Map();
     return {
         queues,
         playerStates,
@@ -31,10 +32,11 @@ module.exports = (bot) => {
         connect(guild, vc){
             return new Promise((resolve, reject) => {
                 let connection = getVoiceConnection(guild.id);
-                if(connection && connection.st){
+                if(connection && connection.st){ //???
                     this.createPlayer(guild, connection);
                     return resolve();
                 } else {
+                    bot.dj.startDisconnectTimer(guild);
                     connection = joinVoiceChannel({
                         channelId: vc.id,
                         guildId: guild.id,
@@ -93,6 +95,7 @@ module.exports = (bot) => {
             connection.subscribe(player);
             player.on('error', (error) => console.error(error));
             player.on(AudioPlayerStatus.Idle, () => {
+                bot.dj.startDisconnectTimer(guild);
                 console.log(`idle`);
                 playerState.idle = true;
                 let queue = queues.get(guild.id);
@@ -101,7 +104,7 @@ module.exports = (bot) => {
                         console.log(`queue finished`);
                         // playerState.connection.disconnect();
                     } else {
-                        console.log(`next`);
+                        console.log(`next`, queue);
                         queue.shift();
                         this.runQueue(guild);
                     }
@@ -212,7 +215,9 @@ module.exports = (bot) => {
                     return;
                 }
                 let resource = createAudioResource(file);
+                bot.dj.cancelDisconnectTimer(guild); //cancel to prevent disconnecting while playing
                 await playerState.player.play(resource); //this will cancel the current audio if it's playing
+                // bot.dj.startDisconnectTimer(guild);
                 queue[0].startedAt = Date.now();
                 playerState.idle = false;
             } catch(err) {
@@ -341,6 +346,21 @@ module.exports = (bot) => {
                     }
                 }
             });
+        },
+
+        startDisconnectTimer(guild){
+            if(disconnectTimers.has(guild.id)){
+                bot.dj.cancelDisconnectTimer(guild);
+            }
+            disconnectTimers.set(guild.id, setTimeout(() => {
+                bot.dj.disconnect(guild);
+                disconnectTimers.delete(guild.id);
+            }, 15 * 60 * 1000)); //15 minutes
+        },
+        cancelDisconnectTimer(guild){
+            if(disconnectTimers.has(guild.id)){
+                clearTimeout(disconnectTimers.get(guild.id));
+            }
         },
 
 

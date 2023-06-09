@@ -30,7 +30,7 @@ module.exports = (bot) => {
 
     function call(mori){
         mori.respondInfo(
-            run(mori, mori.params[0]),
+            run(mori, mori.params.join(' ')),
             mori
         );
     }

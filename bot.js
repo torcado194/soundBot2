@@ -338,10 +338,11 @@ function Bot(prefix = '-'){
             try {
                 let data = await promise;
                 if(data){
-                    this.reply(undefined, true);
+                    this.confirm();
                     return this.info(data, '🔆');
                 } else {
-                    return this.reply(undefined, true);
+                    // return this.reply(undefined, true);
+                    return this.confirm();
                 }
                 // return this.confirm(data);
             } catch(err) {
@@ -351,7 +352,7 @@ function Bot(prefix = '-'){
 
         confirm(){
             if(this.interaction){
-                return this.reply('👍');
+                return this.reply('👍', true);
             } else {
                 return this.message.react('👍');
             }
