@@ -94,6 +94,7 @@ module.exports = (bot) => {
             playerStates.set(guild.id, playerState);
             connection.subscribe(player);
             player.on('error', (error) => console.error(error));
+            player.on('debug', (error) => console.info(error));
             player.on(AudioPlayerStatus.Idle, () => {
                 bot.dj.startDisconnectTimer(guild);
                 console.log(`idle`);
@@ -104,8 +105,8 @@ module.exports = (bot) => {
                         console.log(`queue finished`);
                         // playerState.connection.disconnect();
                     } else {
-                        console.log(`next`, queue);
                         queue.shift();
+                        console.log(`next`, queue, queue[0]);
                         this.runQueue(guild);
                     }
                 }
@@ -210,12 +211,13 @@ module.exports = (bot) => {
                     queue.shift();
                 }
 
-                let file = await bot.dj.makeSoundFile(queue[0].input);
+                let file = await bot.dj.makeSoundFile(queue[0].mori, queue[0].input);
                 if(queue.length === 0){ //failsafe
                     return;
                 }
                 let resource = createAudioResource(file);
                 bot.dj.cancelDisconnectTimer(guild); //cancel to prevent disconnecting while playing
+                console.log("[[PLAYING]]", file, resource)
                 await playerState.player.play(resource); //this will cancel the current audio if it's playing
                 // bot.dj.startDisconnectTimer(guild);
                 queue[0].startedAt = Date.now();
@@ -554,15 +556,21 @@ module.exports = (bot) => {
 
             input = bot.dj.parseNestedGroup(input);
             input = input.filter(v => v && !/^\s+$/.test(v));
-            input = splitFilters(input);
             input = convertSources(input); //before deep split because tts source may have spaces
+            // input = flattenSingles(input);
             input = bot.dj.deepSplit(input, /\s/g);
+            input = flattenSingles(input);
+            input = splitFilters(input);
+            input = flattenSingles(input);
             //console.log("[][][]", input);
             input = splitSidechain(input);
+            input = flattenSingles(input);
             input = splitMerges(input);
-            // input = flattenSingles(input);
-            input = bot.dj.deepFlatten(input);
+            input = flattenSingles(input);
+            
             input = arrangeFilters(input);
+            // input = bot.dj.deepFlatten(input);
+            // input = input.filter(v => v && !/^\s+$/.test(v));
             input = convertSidechain(input);
             input = parseMerges(input);
             return input;
@@ -641,7 +649,13 @@ module.exports = (bot) => {
                         if(/^(\[[^\[\]]*?\])$/.test(arr[i])){
                             //already split
                         } else {
-                            arr.splice(i, 1, arr[i].split(/(\[[^\[\]]*?\])/g));
+                            let split = arr[i].split(/(\[[^\[\]]*?\])/g).filter(v => v && !/^\s+$/.test(v));
+                            if(arr[i].startsWith('[')){
+                                arr.splice(i, 1, ...split);
+                                i -= split.length - 1;
+                            } else {
+                                arr.splice(i, 1, split);
+                            }
                         }
                     }
                 }
@@ -704,30 +718,54 @@ module.exports = (bot) => {
             }
             
             function arrangeFilters(arr){
-                for(let i = 0; i < arr.length; i++){
-                    if(Array.isArray(arr[i])){
-                        arrangeFilters(arr[i]);
-                    } else if(typeof arr[i] === 'object'){
-                        continue;
-                    } else if(/^\[.+\]$/.test(arr[i])){
-                        if(i <= 0){
-                            break;
+
+                //arr = arrange(arr);
+                return group(arr);
+                function arrange(arr){
+                    for(let i = 0; i < arr.length; i++){
+                        if(Array.isArray(arr[i])){
+                            for(let j = 0; j < arr[i].length; j++){
+                                if(Array.isArray(arr[i][j])){
+                                    arrange(arr[i]);
+                                } else if(i >= 1 && j === 0 && /^\[.+\]$/.test(arr[i][j])){
+                                    let prev = arr[i-1];
+                                    if(!Array.isArray(prev)){
+                                        prev = [prev]
+                                    }
+                                    arr.splice(i-1, 2, [prev, ...arr[i]]);
+                                    i--;
+                                }
+                            }
                         }
-                        //let sound = {group: arr[i-1], filter: arr[i]};
-                        let filters = arr[i].split(/[\[\], ]/).filter(v => v);
-                        let group = Array.isArray(arr[i-1]) ? arr[i-1] : [arr[i-1]];
-                        arr.splice(i-1, 2, {group, filters});
-                        i--;
-                    } else if(/^[^\[\]]+\[.+\]$/.test(arr[i])){
-                        console.log(arr[i]);
-                        let s = arr[i].split(/^([^\[\]]+)(\[.+\])$/).filter(v => v);
-                        console.log(s);
-                        //arr.splice(i, 1, {group: s[0], filter: s[1]});
-                        let filters = s[1].split(/[\[\], ]/).filter(v => v);
-                        arr.splice(i, 1, {group: [s[0]], filters});
                     }
+                    return arr;
                 }
-                return arr;
+                function group(arr){
+                    for(let i = 0; i < arr.length; i++){
+                        if(Array.isArray(arr[i])){
+                            group(arr[i]);
+                        } else if(typeof arr[i] === 'object'){
+                            continue;
+                        } else if(/^\[.+\]$/.test(arr[i])){
+                            if(i <= 0){
+                                break;
+                            }
+                            //let sound = {group: arr[i-1], filter: arr[i]};
+                            let filters = arr[i].split(/[\[\], ]/).filter(v => v);
+                            let group = Array.isArray(arr[i-1]) ? arr[i-1] : [arr[i-1]];
+                            arr.splice(i-1, 2, {group, filters});
+                            i--;
+                        } else if(/^[^\[\]]+\[.+\]$/.test(arr[i])){
+                            console.log(arr[i]);
+                            let s = arr[i].split(/^([^\[\]]+)(\[.+\])$/).filter(v => v);
+                            console.log(s);
+                            //arr.splice(i, 1, {group: s[0], filter: s[1]});
+                            let filters = s[1].split(/[\[\], ]/).filter(v => v);
+                            arr.splice(i, 1, {group: [s[0]], filters});
+                        }
+                    }
+                    return arr;
+                }
             }
             
             function parseMerges(arr){
@@ -1238,18 +1276,28 @@ module.exports = (bot) => {
             });
         },
         
-        makeSoundFile(input){
+        makeSoundFile(mori, input){
             return new Promise((resolve, reject) => {
-                console.log({input});
+                console.log(input);
                 
                 let output = bot.getTempFile();
                 
                 let setup = spawn('ffmpeg', [
                     '-i', ...input.split(' '),
+                    '-loglevel', 'error',
                     output
                 ]);
+
+                let errorText = '';
+                setup.stderr.on('data', err => {
+                    console.error('{FFMPEG ERR}', err.toString());
+                    errorText += err.toString();
+                });
                 
                 setup.stdout.on('end', res => {
+                    if(errorText){
+                        mori.warning(errorText);
+                    }
                     return resolve(output);
                 }); 
             });

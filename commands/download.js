@@ -56,7 +56,7 @@ module.exports = (bot) => {
         } else {
             try {
                 let sounds = await bot.dj.convertInput(mori, bot.dj.getInput(mori.guild, input), 0);
-                let file = await bot.dj.makeSoundFile(sounds);
+                let file = await bot.dj.makeSoundFile(mori, sounds);
                 return Promise.resolve({
                     files: [{
                         attachment: file,
