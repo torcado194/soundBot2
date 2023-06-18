@@ -287,6 +287,8 @@ function Bot(prefix = '-'){
                     let seg = segs[i];
                     if(typeof seg === 'object'){
                         seg.content = '';
+                    } else if(typeof seg === 'string'){
+                        seg = {content: seg};
                     }
                     if(this.interaction){
                         if(this.interaction.deferred || (this.interaction.replied && !this.keep)){
@@ -294,9 +296,11 @@ function Bot(prefix = '-'){
                         } else if(this.interaction.replied) {
                             await this.interaction.followUp(seg);
                         } else {
+                            seg.allowedMentions = {repliedUser: false};
                             await this.interaction.reply(seg);
                         }
                     } else {
+                        seg.allowedMentions = {repliedUser: false};
                         await this.message.reply(seg);
                     }
                 }
@@ -729,6 +733,7 @@ function Bot(prefix = '-'){
             c.commandChannels = config.commandChannels;
             c.status = config.status;
             c.leaveSound = config.leaveSound;
+            c.autoDisconnect = config.autoDisconnect;
         } else {
             bot.configs.set(config.guildId, config);
         }

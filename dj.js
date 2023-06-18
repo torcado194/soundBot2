@@ -354,8 +354,11 @@ module.exports = (bot) => {
             if(disconnectTimers.has(guild.id)){
                 bot.dj.cancelDisconnectTimer(guild);
             }
-            disconnectTimers.set(guild.id, setTimeout(() => {
-                bot.dj.disconnect(guild);
+            disconnectTimers.set(guild.id, setTimeout(async () => {
+                let config = await Config.findOne({guildId: guild.id}).exec();
+                if(config.autoDisconnect){
+                    bot.dj.disconnect(guild);
+                }
                 disconnectTimers.delete(guild.id);
             }, 15 * 60 * 1000)); //15 minutes
         },
