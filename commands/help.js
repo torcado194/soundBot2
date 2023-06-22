@@ -60,6 +60,7 @@ module.exports = (bot) => {
                 color: bot.color
             }]}
             // mori.reply(resEmbed);
+            resEmbed.delim = '\r';
             return resEmbed;
         } else if(name){
             let resEmbed = null;
@@ -85,6 +86,7 @@ module.exports = (bot) => {
             }
             if(resEmbed){
                 // mori.reply(resEmbed);
+                resEmbed.delim = '\r';
                 return resEmbed;
             } else {
                 return Promise.reject("no command with that name");
@@ -154,7 +156,7 @@ module.exports = (bot) => {
             }]};
 
             resEmbed.embeds[0].fields.push(...resFilters.embeds[0].fields);
-
+            resEmbed.delim = '\r';
             return resEmbed;
         }
         

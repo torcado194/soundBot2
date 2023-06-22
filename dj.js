@@ -3,6 +3,7 @@ const { joinVoiceChannel, VoiceConnectionStatus, createAudioPlayer, createAudioR
 // const ytdlcore = require('ytdl-core');
 const ytdl = require('youtube-dl-exec');
 const { spawn } = require('child_process');
+const googleTTS = require('google-tts-api');
 
 const SOURCE_SOUND_PATTERN = /{([^{}()\[\]<>=|\\]+?)}/;
 const RANDOM_SOUND_PATTERN = /{rand(?:om)?(?:([<>])(\d+))?(?:([<>])(\d+))?(?::([\w\d]+))?}/;
@@ -722,8 +723,25 @@ module.exports = (bot) => {
             
             function arrangeFilters(arr){
 
-                //arr = arrange(arr);
+                arr = arrange(arr);
                 return group(arr);
+                //NOTE: may be more appropriate if it just pulled out the single filter item instead of it and the rest of the array?
+                // eg:
+                // [
+                //   [a, b, c],
+                //   ['[filter]', d, e]
+                // ]
+                //   > INTO >
+                // [
+                //   [a, b, c],
+                //   '[filter]', 
+                //   [d, e]
+                // ]
+                //   INSTEAD OF
+                // [
+                //   [a, b, c, '[filter]', d, e]
+                // ]
+                // maybe they're identical?
                 function arrange(arr){
                     for(let i = 0; i < arr.length; i++){
                         if(Array.isArray(arr[i])){

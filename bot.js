@@ -30,6 +30,7 @@ function Bot(prefix = '-'){
 
     bot.dj = require('./dj.js')(bot);
     bot.configs = new Map();
+    const Config = require('./models/config.js');
     
     ////////////////////
     /** client setup **/
@@ -587,6 +588,9 @@ function Bot(prefix = '-'){
                 ret = segs;
             }
         } else if(msg.embeds) {
+            if(msg.delim){
+                delimiter = msg.delim;
+            }
             let fields = msg.embeds[0].fields || [];
             for(let i = 0; i < fields.length; i++){
                 if(fields[i].value.length > FIELD_SIZE){
@@ -726,14 +730,22 @@ function Bot(prefix = '-'){
         }
     }
 
+    bot.getConfig = async (guildId) => {
+        let config = await Config.findOne({guildId}).exec();
+        if(!config){
+            config = {};
+        }
+        return config;
+    }
+
     bot.updateConfig = (config) => {
         let c = bot.configs.get(config.guildId);
         if(c){
-            c.prefix = config.prefix;
-            c.commandChannels = config.commandChannels;
-            c.status = config.status;
-            c.leaveSound = config.leaveSound;
-            c.autoDisconnect = config.autoDisconnect;
+            config.prefix && (c.prefix = config.prefix);
+            config.commandChannels && (c.commandChannels = config.commandChannels);
+            config.status && (c.status = config.status);
+            config.leaveSound && (c.leaveSound = config.leaveSound);
+            config.autoDisconnect && (c.autoDisconnect = config.autoDisconnect);
         } else {
             bot.configs.set(config.guildId, config);
         }

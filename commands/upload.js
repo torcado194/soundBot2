@@ -97,7 +97,8 @@ module.exports = (bot) => {
             let savedPost = await newSound.save();
             bot.logUpload(mori.guild.id, mori.user.username, mori.member.id, name, new Date());
             // return Promise.resolve(savedPost);
-            return Promise.resolve(`uploaded sound \`${savedPost.name}\`, link: ${savedPost.link}`);
+            // return Promise.resolve(`uploaded sound \`${savedPost.name}\`, link: ${savedPost.link}`);
+            return Promise.resolve();
         } catch(err) {
             return Promise.reject(err);
         }

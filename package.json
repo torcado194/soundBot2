@@ -31,6 +31,7 @@
     "youtube-dl": "git+https://git@github.com/torcado194/node-youtube-dl.git",
     "youtube-dl-exec": "git+https://git@github.com/torcado194/youtube-dl-exec.git",
     "youtube-dl-wrap": "^2.1.1",
-    "ytdl-core": "^4.11.2"
+    "ytdl-core": "^4.11.2",
+    "google-tts-api": "^2.0.2"
   }
 }

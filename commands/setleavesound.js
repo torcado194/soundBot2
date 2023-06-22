@@ -38,7 +38,8 @@ module.exports = (bot) => {
         }
         
         try {
-            let config = await Config.findOne({guildId: mori.guild.id}).exec();
+            // let config = await Config.findOne({guildId: mori.guild.id}).exec();
+            let config = await bot.getConfig(mori.guild.id);
             config.leaveSound = sound;
             await config.save();
             bot.updateConfig(config);
